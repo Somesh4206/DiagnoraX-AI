@@ -235,11 +235,15 @@ export function ListRow({
       </a>
     )
   }
-  return (
-    <button type="button" onClick={onClick} className={cls}>
-      {inner}
-    </button>
-  )
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls}>
+        {inner}
+      </button>
+    )
+  }
+  // Static row (may contain interactive controls like a Switch — must NOT be a <button>)
+  return <div className={cls}>{inner}</div>
 }
 
 /* ---------- segmented control (iOS style) ---------- */
