@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// DiagnoraX AI — Prisma schema (SQLite)
+// Health records are the single source of truth for the symptom checker,
+// body analysis, dashboard stats and history views.
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +11,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+// One row per analysis run (AI symptom check or deterministic body analysis).
+// `data` holds the full structured payload as JSON (SQLite has no list types).
+model HealthRecord {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Post {
-  id        String   @id @default(cuid())
+  // "SYMPTOM_CHECK" | "BODY_ANALYSIS"
+  type      String
   title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  summary   String
+  // SYMPTOM_CHECK → urgency level ("emergency" | "urgent" | "routine" | "low")
+  // BODY_ANALYSIS → BMI category label
+  severity  String?
+  // full structured payload as JSON (analysis or result object + input echo)
+  data      String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  @@index([type, createdAt])
 }

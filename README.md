@@ -1,6 +1,6 @@
-# 🩺 DiagnoraX AI
+# 📱 DiagnoraX AI
 
-**Your Personal AI Health Companion** — an intelligent health assistant platform built to help you understand symptoms, track wellness metrics, and make informed decisions about your health.
+**Your Personal AI Health Companion** — a mobile-first health app that helps you understand symptoms, track body metrics, and keep a private history of your checks — all in your pocket.
 
 > ⚠️ **Medical Disclaimer** — DiagnoraX AI provides health *information*, not medical *advice*. It is not a substitute for professional diagnosis or treatment. In an emergency, contact your local emergency services immediately.
 
@@ -8,21 +8,24 @@
 
 | Area | State |
 |---|---|
-| Project foundation (Next.js 16, App Router, Tailwind 4, shadcn/ui) | ✅ Complete |
+| Mobile app shell (phone frame, bottom tabs, native feel) | ✅ Complete |
 | Database layer (Prisma + SQLite) | ✅ Complete |
-| Core web app (dashboard, symptom checker, health profile) | 🚧 In active development |
-| AI features (symptom analysis, report insights) | 📋 Planned |
+| AI Symptom Checker (LLM + deterministic emergency triage) | ✅ Live |
+| Body Lab — BMI with healthy weight range (deterministic) | ✅ Live |
+| History — search, filters, expandable details, delete | ✅ Live |
+| Profile — dark mode, emergency numbers, export / clear data | ✅ Live |
+| Medication awareness · Report explainer · Reminders | 📋 Planned |
 
-This repository currently contains the **production foundation** of DiagnoraX AI. Feature modules are developed iteratively — see [`worklog.md`](./worklog.md) for the live development handover log.
+The app is a **single-route mobile experience**: on a phone it fills the screen and can be installed to the home screen (PWA manifest included); on desktop it renders inside a phone mockup so it always previews as the mobile app it is.
 
-## ✨ Planned Features
+## ✨ Features
 
-- **AI Symptom Checker** — describe symptoms in plain language, receive a structured informational analysis
-- **Health Dashboard** — metrics, trends, and history at a glance
-- **Medication Awareness** — informational reference for common interactions (never a substitute for a pharmacist or doctor)
-- **Health Reports** — lab reports explained in plain language
-- **Reminders & Tracking** — appointments, medication schedules, and daily habits
-- **Privacy First** — your health data stays in your own database, not a third-party cloud
+- **AI Symptom Checker** — describe symptoms in plain words; get an urgency level, commonly-reported conditions, self-care steps, and red flags. Emergency keywords (chest pain, stroke signs…) trigger a **deterministic triage before any AI call**
+- **Health Snapshot** — wellness ring + quick stats on the Home screen
+- **Body Lab** — BMI with live sliders, category scale, healthy weight range, honest caveats
+- **Private History** — every check is saved on-device; search, filter, expand, delete, export as JSON, or wipe everything
+- **Emergency numbers** — one-tap 108 (ambulance) / 112 (India) from Home and Profile
+- **Light & dark themes** — light-first medical design, dark mode toggle in Profile
 
 ## 🛠 Tech Stack
 
@@ -89,12 +92,12 @@ The app runs on **http://localhost:3000**.
 
 ## 🗺 Roadmap
 
-- [ ] Phase 1 — Landing experience & visual identity
-- [ ] Phase 2 — Health dashboard & core metrics
-- [ ] Phase 3 — AI symptom checker (API + UI)
-- [ ] Phase 4 — Health profile, history & persistence
-- [ ] Phase 5 — Reports, reminders & tracking
-- [ ] Phase 6 — Polish, QA & full documentation
+- [x] Phase 1 — Mobile app shell & visual identity
+- [x] Phase 2 — Home dashboard (wellness ring, quick actions, recent activity)
+- [x] Phase 3 — AI symptom checker (API + UI + emergency triage)
+- [x] Phase 4 — Body Lab, history & persistence
+- [x] Phase 5 — Profile: themes, emergency numbers, data export & wipe
+- [ ] Phase 6 — Medication awareness, report explainer, reminders
 
 ## 👤 Author
 

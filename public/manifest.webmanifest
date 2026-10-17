@@ -1,0 +1,27 @@
+{
+  "name": "DiagnoraX AI — Your Personal AI Health Companion",
+  "short_name": "DiagnoraX",
+  "description": "AI symptom checking, body metrics and a private health history — all in your pocket.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F8F6",
+  "theme_color": "#0E9F6E",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
