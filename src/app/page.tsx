@@ -5,17 +5,19 @@ import { Activity } from 'lucide-react'
 import { DiagnoraXApp } from '@/components/diagnorax/app'
 import { DeviceFrame } from '@/components/diagnorax/device-frame'
 
-type Mode = 'boot' | 'embedded' | 'desktop' | 'mobile'
+type Mode = 'boot' | 'embedded' | 'phone' | 'app'
 
 /* Presentation mode, hydration-safe:
- *  - 'embedded' : running inside the desktop device frame's same-origin iframe
- *                 → render the raw app so its mobile layout fills the phone.
- *  - 'desktop'  : wide viewport → phone mockup with the app inside.
- *  - 'mobile'   : phone viewport → the app takes over edge-to-edge.
+ *  - 'embedded' : running inside the device frame's same-origin iframe
+ *                 → render the raw app so it fills the phone screen.
+ *  - 'phone'    : viewport ≥ 640px → the app runs inside the phone frame,
+ *                 exactly like a handset. There is NO wide "website" layout
+ *                 at any viewport size — this is a mobile application.
+ *  - 'app'      : real phone (< 640px) → the app takes over edge-to-edge.
  *  - 'boot'     : server snapshot → neon launch splash. */
 let mqCache: MediaQueryList | null = null
 function getMq(): MediaQueryList {
-  if (!mqCache) mqCache = window.matchMedia('(min-width: 1024px)')
+  if (!mqCache) mqCache = window.matchMedia('(min-width: 640px)')
   return mqCache
 }
 
@@ -27,14 +29,14 @@ function subscribe(onChange: () => void) {
 
 function getSnapshot(): Mode {
   if (window.self !== window.top) return 'embedded'
-  return getMq().matches ? 'desktop' : 'mobile'
+  return getMq().matches ? 'phone' : 'app'
 }
 
 function getServerSnapshot(): Mode {
   return 'boot'
 }
 
-/* App boot splash — deterministic, doubles as the app's launch animation. */
+/* App launch splash — doubles as the app's boot animation. */
 function BootSplash() {
   return (
     <div className="grid-bg flex min-h-dvh flex-col items-center justify-center gap-5 bg-background">
@@ -67,7 +69,7 @@ export default function Home() {
 
   if (mode === 'boot') return <BootSplash />
 
-  if (mode === 'desktop') {
+  if (mode === 'phone') {
     return (
       <DeviceFrame>
         <iframe
@@ -79,6 +81,6 @@ export default function Home() {
     )
   }
 
-  // Mobile device, or embedded inside the device frame → the real app.
+  // Real phone, or embedded inside the device frame → the app itself.
   return <DiagnoraXApp />
 }

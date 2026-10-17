@@ -8,12 +8,11 @@ import {
   Home,
   LayoutDashboard,
   Scale,
-  Siren,
   Stethoscope,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { VIEW_LABEL, MEDICAL_DISCLAIMER, type View } from './ui-bits'
+import { VIEW_LABEL, type View } from './ui-bits'
 import { LandingView } from './landing'
 import { DashboardView } from './dashboard'
 import { SymptomCheckerView } from './symptoms'
@@ -45,9 +44,9 @@ export function DiagnoraXApp() {
         Skip to content
       </a>
 
-      {/* ---------- header ---------- */}
+      {/* ---------- app header ---------- */}
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
           <button
             onClick={() => navigate('home')}
             className="flex items-center gap-2.5 rounded-lg px-1 py-1 text-left"
@@ -61,45 +60,15 @@ export function DiagnoraXApp() {
             </span>
           </button>
 
-          <nav aria-label="Primary" className="hidden md:block">
-            <ul className="flex items-center gap-1">
-              {NAV.map((n) => {
-                const active = view === n.view
-                return (
-                  <li key={n.view} className="relative">
-                    <button
-                      onClick={() => navigate(n.view)}
-                      aria-current={active ? 'page' : undefined}
-                      className={cn(
-                        'relative rounded-md px-3 py-2 text-sm transition-colors',
-                        active
-                          ? 'font-medium text-neon'
-                          : 'text-text-2 hover:text-foreground'
-                      )}
-                    >
-                      {VIEW_LABEL[n.view]}
-                      {active ? (
-                        <span
-                          aria-hidden
-                          className="absolute inset-x-3 -bottom-[13px] h-[2px] rounded-full bg-neon shadow-[0_0_10px_rgba(0,255,163,.8)]"
-                        />
-                      ) : null}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </nav>
-
-          <p className="hidden items-center gap-1.5 text-[11px] leading-tight text-text-3 lg:flex">
-            <Siren className="size-3.5 shrink-0 text-danger/90" aria-hidden />
-            In an emergency, call your local emergency services.
+          <p className="flex items-center gap-1.5 text-[11px] leading-tight text-text-3">
+            <span aria-hidden className="inline-block size-1.5 rounded-full bg-neon shadow-[0_0_8px_rgba(0,255,163,.8)]" />
+            AI health companion
           </p>
         </div>
       </header>
 
       {/* ---------- main ---------- */}
-      <main id="main" className="flex-1 pb-24 md:pb-0">
+      <main id="main" className="flex-1 pb-24">
         <AnimatePresence mode="wait">
           <motion.div
             key={view}
@@ -117,13 +86,10 @@ export function DiagnoraXApp() {
         </AnimatePresence>
       </main>
 
-      {/* ---------- footer ---------- */}
-      <Footer onNavigate={navigate} />
-
-      {/* ---------- mobile bottom nav ---------- */}
+      {/* ---------- bottom tab bar (the app's navigation) ---------- */}
       <nav
-        aria-label="Primary mobile"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/90 backdrop-blur-md md:hidden"
+        aria-label="Primary"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/90 backdrop-blur-md"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <ul className="grid grid-cols-5">
@@ -151,83 +117,5 @@ export function DiagnoraXApp() {
         </ul>
       </nav>
     </div>
-  )
-}
-
-/* ---------- footer ---------- */
-
-function Footer({ onNavigate }: { onNavigate: (v: View) => void }) {
-  const liveLinks: { view: View; label: string }[] = [
-    { view: 'home', label: 'Home' },
-    { view: 'dashboard', label: 'Dashboard' },
-    { view: 'symptoms', label: 'Symptom Check' },
-    { view: 'body', label: 'Body Analysis' },
-    { view: 'history', label: 'History' },
-  ]
-  const planned = ['Report Explainer', 'Smart Reminders', 'Doctor Finder']
-
-  return (
-    <footer className="mt-auto border-t border-border/60 bg-secondary/30">
-      <div className="mx-auto max-w-6xl px-4 pb-24 pt-12 sm:px-6 md:pb-10">
-        <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr]">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="rounded-lg border border-neon/40 bg-neon/10 p-1.5">
-                <Activity className="size-4 text-neon" aria-hidden />
-              </span>
-              <span className="text-base font-semibold tracking-tight">
-                DiagnoraX<span className="text-neon"> AI</span>
-              </span>
-            </div>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-text-2">
-              Your personal AI health companion. Information you can act on — not a diagnosis.
-            </p>
-            <p className="mt-4 max-w-md text-[11px] leading-relaxed text-text-3">
-              {MEDICAL_DISCLAIMER}
-            </p>
-          </div>
-
-          <nav aria-label="Live modules">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-text-3">
-              Live modules
-            </h3>
-            <ul className="mt-4 space-y-2.5">
-              {liveLinks.map((l) => (
-                <li key={l.view}>
-                  <button
-                    onClick={() => onNavigate(l.view)}
-                    className="text-sm text-text-2 transition-colors hover:text-neon"
-                  >
-                    {l.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-text-3">Roadmap</h3>
-            <ul className="mt-4 space-y-2.5">
-              {planned.map((p) => (
-                <li key={p} className="flex items-center gap-2 text-sm text-text-3">
-                  {p}
-                  <span className="rounded-full border border-border bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider">
-                    Planned
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-[11px] leading-relaxed text-text-3">
-              Roadmap items ship when they meet the same quality bar as the live modules.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-10 flex flex-col gap-2 border-t border-border/60 pt-6 text-xs text-text-3 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 DiagnoraX AI · Built by Somesh M</p>
-          <p>Not a medical device · No data leaves your device</p>
-        </div>
-      </div>
-    </footer>
   )
 }

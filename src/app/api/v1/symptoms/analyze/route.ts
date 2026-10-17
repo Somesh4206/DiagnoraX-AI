@@ -37,8 +37,20 @@ type Analysis = z.infer<typeof analysisSchema>
 
 /* ---------- emergency triage (deterministic, runs BEFORE any AI call) ---------- */
 
-const EMERGENCY_RE =
-  /\b(chest pain|chest pressure|crushing chest|can'?t breathe|cannot breathe|difficulty breathing|trouble breathing|struggling to breathe|severe bleeding|bleeding heavily|unconscious|unresponsive|passed out|seizure|convulsion|convulsions|stroke|face drooping|face droop|slurred speech|numbness on one side|one side is numb|sudden weakness on one side|suicidal|suicide|kill myself|end my life|overdose|poisoning|poisoned|anaphylaxis|anaphylactic|severe allergic reaction|throat closing|throat is closing|tongue swelling|coughing blood|coughing up blood|vomiting blood|worst headache of my life)\b/i
+const EMERGENCY_PHRASES =
+  'chest pain|chest pressure|crushing chest|can\'?t breathe|cannot breathe|difficulty breathing|trouble breathing|struggling to breathe|severe bleeding|bleeding heavily|unconscious|unresponsive|passed out|seizure|convulsion|convulsions|stroke|face drooping|face droop|slurred speech|numbness on one side|one side is numb|sudden weakness on one side|suicidal|suicide|kill myself|end my life|overdose|poisoning|poisoned|anaphylaxis|anaphylactic|severe allergic reaction|throat closing|throat is closing|tongue swelling|coughing blood|coughing up blood|vomiting blood|worst headache of my life'
+
+const EMERGENCY_RE = new RegExp(`\\b(${EMERGENCY_PHRASES})\\b`, 'i')
+
+/* Negated mentions ("no chest pain", "denies chest pain", "without any
+ * trouble breathing") must NOT trigger the emergency path. We blank out a
+ * negation cue + at most one filler word + the emergency phrase before
+ * testing. Longer spans (e.g. "no fever and chest pain") are deliberately
+ * left intact so a real emergency mention is never masked. */
+const NEGATED_EMERGENCY_RE = new RegExp(
+  `\\b(?:no|without|denies|deny|negative for)\\s+(?:\\w+\\s+)?(?:${EMERGENCY_PHRASES})\\b`,
+  'gi'
+)
 
 function emergencyAnalysis(): Analysis {
   return {
@@ -136,7 +148,8 @@ export async function POST(req: NextRequest) {
   }
   const input = parsed.data
 
-  const isEmergency = EMERGENCY_RE.test(input.symptoms)
+  const negationScrubbed = input.symptoms.replace(NEGATED_EMERGENCY_RE, ' ')
+  const isEmergency = EMERGENCY_RE.test(negationScrubbed)
   let analysis: Analysis
   let engine: 'emergency-triage' | 'ai-llm'
 
