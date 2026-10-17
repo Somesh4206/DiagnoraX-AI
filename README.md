@@ -9,24 +9,20 @@
 | Area | State |
 |---|---|
 | Project foundation (Next.js 16, App Router, Tailwind 4, shadcn/ui) | ✅ Complete |
-| Database layer (Prisma + SQLite, `HealthRecord` model) | ✅ Complete |
-| Dark Neon Medical design system + app shell (nav, footer, mobile) | ✅ Complete |
-| AI Symptom Checker (LLM + deterministic emergency triage) | ✅ Live |
-| Body Analysis (deterministic BMI, healthy ranges) | ✅ Live |
-| Health History (search, filters, delete, raw JSON transparency) | ✅ Live |
-| Dashboard (stats, BMI trend chart, recent activity) | ✅ Live |
-| Medication interactions, reminders, report explainer | 📋 Planned — see roadmap |
+| Database layer (Prisma + SQLite) | ✅ Complete |
+| Core web app (dashboard, symptom checker, health profile) | 🚧 In active development |
+| AI features (symptom analysis, report insights) | 📋 Planned |
 
-This repository ships a working app: three interconnected modules backed by real API routes (`/api/v1/…`) with validation, loading/error states, and an AI path that runs server-side only. See [`worklog.md`](./worklog.md) for the live development log.
+This repository currently contains the **production foundation** of DiagnoraX AI. Feature modules are developed iteratively — see [`worklog.md`](./worklog.md) for the live development handover log.
 
-## ✨ Features
+## ✨ Planned Features
 
-- **AI Symptom Checker** — describe symptoms in plain language; get an honest urgency level (emergency / urgent / routine / low), commonly reported possibilities (hedged, never a diagnosis), self-care, red flags
-- **Emergency triage** — descriptions with emergency signs bypass the LLM entirely and return deterministic immediate-care guidance
-- **Body Analysis** — BMI with healthy weight ranges, gauge, and full formula transparency (deterministic arithmetic, no AI involved)
-- **Health Dashboard** — stat cards, BMI trend chart, recent activity, quick actions
-- **Health History** — every analysis saved locally; searchable, expandable (including the raw JSON record), deletable
-- **Privacy first** — your data stays in your own SQLite database, not a third-party cloud
+- **AI Symptom Checker** — describe symptoms in plain language, receive a structured informational analysis
+- **Health Dashboard** — metrics, trends, and history at a glance
+- **Medication Awareness** — informational reference for common interactions (never a substitute for a pharmacist or doctor)
+- **Health Reports** — lab reports explained in plain language
+- **Reminders & Tracking** — appointments, medication schedules, and daily habits
+- **Privacy First** — your health data stays in your own database, not a third-party cloud
 
 ## 🛠 Tech Stack
 
@@ -38,8 +34,6 @@ This repository ships a working app: three interconnected modules backed by real
 | Database | Prisma ORM with SQLite |
 | State | Zustand (client) · TanStack Query (server) |
 | Auth | NextAuth.js v4 (available) |
-| Charts | Recharts |
-| Animations | Framer Motion (reduced-motion aware) |
 | Runtime | Bun |
 | AI | z-ai-web-dev-sdk (server-side only) |
 
@@ -93,28 +87,14 @@ The app runs on **http://localhost:3000**.
 └── worklog.md       # Development handover log
 ```
 
-## 🔌 API Endpoints
-
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/api/v1/symptoms/analyze` | AI symptom analysis (emergency triage runs first, deterministic) |
-| POST | `/api/v1/body/analysis` | Deterministic BMI + healthy weight range (no AI) |
-| GET | `/api/v1/records` | List records (`type`, `q`, `limit` filters) |
-| DELETE | `/api/v1/records?id=` | Delete a record |
-
-All endpoints validate input (zod) and return `{ error }` with proper status codes (400/404/502/504).
-
 ## 🗺 Roadmap
 
-- [x] Phase 1 — Landing experience, design system, ECG visualization, app shell
-- [x] Phase 2 — Health dashboard, stats, BMI trend chart
-- [x] Phase 3 — AI symptom checker (emergency triage + LLM)
-- [x] Phase 4 — Body analysis + health history (search, delete, raw JSON)
-- [ ] Phase 5 — Medication interaction awareness
-- [ ] Phase 6 — Smart reminders + browser notifications
-- [ ] Phase 7 — Report explainer (lab values, plain language)
-- [ ] Phase 8 — History export (JSON/CSV), weekly charts
-- [ ] Phase 9 — Auth (NextAuth) if multi-user is ever needed
+- [ ] Phase 1 — Landing experience & visual identity
+- [ ] Phase 2 — Health dashboard & core metrics
+- [ ] Phase 3 — AI symptom checker (API + UI)
+- [ ] Phase 4 — Health profile, history & persistence
+- [ ] Phase 5 — Reports, reminders & tracking
+- [ ] Phase 6 — Polish, QA & full documentation
 
 ## 👤 Author
 
