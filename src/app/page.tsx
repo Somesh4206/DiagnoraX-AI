@@ -12,7 +12,7 @@ type Mode = 'boot' | 'embedded' | 'phone' | 'app'
  *                 → render the raw app so it fills the phone screen.
  *  - 'phone'    : viewport ≥ 640px → the app runs inside the phone frame,
  *                 exactly like a handset. There is NO wide "website" layout
- *                 at any viewport size — this is a mobile application.
+ *                 at any viewport — this is a mobile application.
  *  - 'app'      : real phone (< 640px) → the app takes over edge-to-edge.
  *  - 'boot'     : server snapshot → neon launch splash. */
 let mqCache: MediaQueryList | null = null
@@ -36,15 +36,12 @@ function getServerSnapshot(): Mode {
   return 'boot'
 }
 
-/* App launch splash — doubles as the app's boot animation. */
+/* App launch splash — doubles as the boot animation. */
 function BootSplash() {
   return (
     <div className="grid-bg flex min-h-dvh flex-col items-center justify-center gap-5 bg-background">
       <div className="relative">
-        <div
-          aria-hidden
-          className="absolute inset-0 rounded-2xl bg-neon/20 blur-2xl"
-        />
+        <div aria-hidden className="absolute inset-0 rounded-2xl bg-neon/20 blur-2xl" />
         <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-neon/40 bg-neon/10 shadow-[0_0_28px_rgba(0,255,163,.35)]">
           <Activity className="h-8 w-8 text-neon" aria-hidden />
         </span>
