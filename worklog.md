@@ -7,44 +7,44 @@
 
 ## 1. Current Project Status (Assessment)
 
-- **Repository**: https://github.com/Somesh4206/DiagnoraX-AI — `main`, git identity `Somesh M <someshm7662@gmail.com>` (token in `.git/config` remote URL; rotate when the project wraps up).
-- **The app is now a MOBILE APPLICATION (user's explicit direction)**: the previous "Dark Neon Medical website" release (commit `7cf813b`) was **reverted** (commit `dc51070`) because the user said it looked like a website with a changed theme and asked for the mobile app instead. The proven backend was restored from git history, and the frontend was rebuilt as a native-style mobile app.
-- **Form factor**: single-route mobile app at `/`. On phones (<lg) it fills the viewport edge-to-edge; on desktop it renders inside a **phone mockup frame** (dynamic island, status bar, bezel) beside a small showcase panel — it must always read as "mobile app", never as a website. PWA manifest (`public/manifest.webmanifest`) + AI-generated app icon (`public/icon-1024.png`) allow Add-to-Home-Screen installs.
-- **Theme**: light-first "mobile health" design — emerald primary `oklch(0.608 0.134 163)`, white cards, mist-green canvas. **Dark mode** is a toggle in Profile (next-themes, class strategy, default light, system preference disabled deliberately). No blue/indigo anywhere.
-- Stack: Next.js 16 App Router, TypeScript, Tailwind 4, shadcn/ui, Prisma + SQLite (`HealthRecord`), z-ai-web-dev-sdk (LLM, server-side only), framer-motion, lucide icons.
+- **Repository**: https://github.com/Somesh4206/DiagnoraX-AI — `main` @ `409e46b`, git identity `Somesh M <someshm7662@gmail.com>` (token in `.git/config` remote URL; rotate when the project wraps up).
+- **The app is the EXACT DARK NEON MOBILE APPLICATION from the first chat, restored.** The user rejected the light-emerald mobile app (commits `540e4bf`+`cbb4d8a`) as "not the same as previous" and asked to revert to the original assignment: **dark neon theme + mobile application**. This round restored the exact Dark Neon Medical design system and all first-release views from git history (commit `7cf813b`), presented as a mobile app.
+- **Theme (exact, dark-fixed)**: bg `#050807` · card `#0D1712` · elevated `#122019` · border `#1C3529` · neon `#00FFA3` · cyan `#40D9FF` · warn `#FFBF47` · danger `#FF4D6D`. Utilities: `neon-card`, `neon-card-hover`, `grid-bg`, `hero-fade`, `text-glow`, `gradient-neon-text`, `glow-primary`, `chip-neon`, `dot-pulse`, `scrollbar-neon`. **Do not re-theme.** The user has now twice reverted theme changes — any restyle must keep these exact tokens.
+- **Form factor**: single-route mobile app at `/`. On phones (<1024px) the app fills the viewport edge-to-edge with its bottom tab bar. On desktop it runs inside a phone mockup (`device-frame.tsx`: dark bezel, dynamic island, status bar, ambient neon glow) via a **same-origin iframe at phone width**, so the app's own mobile layout is always what renders — it can never degrade into a "website" look. Neon boot splash while the presentation mode resolves. PWA manifest re-themed to `#050807`.
+- Stack: Next.js 16 App Router, TypeScript, Tailwind 4, shadcn/ui, Prisma + SQLite (`HealthRecord`), Recharts (BMI trend), framer-motion, z-ai-web-dev-sdk (LLM, server-side only), Bun.
 
 ## 2. Current Goals / Completed Changes / Verification
 
-**This round — "Revert to mobile app" (per user request):**
+**This round — "Restore exact dark-neon mobile app" (user request: "revert changes upto last 4 chats… exact theme and layout which was assigned in the first chat"):**
 
-- `git revert 7cf813b` (→ `dc51070`) removed the entire dark-neon website; then restored the backend from history: `src/app/api/v1/**` (symptoms analyze, body analysis, records CRUD) + `prisma/schema.prisma` (`HealthRecord`), `bun run db:push` OK.
-- New mobile app shell (`src/components/diagnorax/`): `phone-frame.tsx` (device mockup + status bar + desktop showcase panel), `tab-bar.tsx` (5 tabs: Home/Check/Body/History/Profile, iOS-style active pill, safe-area padding), `app.tsx` (client state shell — records loading, per-screen header config, AnimatePresence screen transitions, in-app toast that renders INSIDE the phone so the illusion never breaks), `ui-bits.tsx` (Chip, IconBadge, ListRow, SegmentedControl, SelectChips, EmptyState, time helpers, urgency/category tone maps), `api.ts` (typed client + new `deleteAllRecords()`).
-- Screens (`screens/`): `home.tsx` (greeting, animated wellness ring with score heuristic, 4 quick-action cards, recent activity, emergency 112/108 strip, privacy line), `symptoms.tsx` (textarea + example chips + age + duration chips + sex segmented + severity slider, AI result: urgency banner, conditions, self-care, red flags, seek-help, raw JSON collapsible), `body.tsx` (height/weight sliders with live BMI chip, save → big result, BMI scale with spring marker, healthy range, formula, caveats), `history.tsx` (search + filter chips, day-grouped timeline with sticky labels, expandable details incl. stat tiles, AlertDialog delete), `profile.tsx` (local editable name via localStorage, dark-mode Switch, emergency tel: links, export JSON download, clear-all-data, privacy rows, about).
-- Backend addition: `DELETE /api/v1/records?all=true` → `deleteMany` (for Profile's clear-all).
-- Theme rewrite in `globals.css` (light+dark emerald tokens, `success`/`warning`/`teal-accent` custom tokens, `app-card`/`no-scrollbar`/`pb-safe`/`dot-grid` utilities). `layout.tsx`: DiagnoraX metadata, PWA manifest, apple-web-app, viewport (cover, no zoom), ThemeProvider default light.
+- `git checkout 7cf813b -- src/app/globals.css src/components/diagnorax/{api,app,body,dashboard,ecg,history,landing,symptoms,ui-bits}.tsx` — byte-exact restore of the first-release theme + views. Deleted the light-app files (`screens/*`, `tab-bar.tsx`, `phone-frame.tsx`).
+- New `src/components/diagnorax/device-frame.tsx` (dark-neon phone mockup + showcase panel) and new `src/app/page.tsx` presentation router: `useSyncExternalStore` resolves mode → `embedded` (inside the frame's iframe → raw app), `desktop` (≥1024px → DeviceFrame + iframe), `mobile` (raw app full-screen), `boot` (server snapshot → neon splash). Hydration-safe, no lint errors.
+- `layout.tsx`: first-release base (dark-fixed, Toaster) + kept PWA manifest, `/icon-1024.png` icons, apple-web-app, viewport (themeColor `#050807`). `manifest.webmanifest` background/theme colors → `#050807`.
+- Backend untouched (identical to first release; records route still supports the optional `?all=true` clear-all). README rewritten to describe the dark neon mobile app.
+- **Dev-server note**: after `git checkout` of `globals.css`, Turbopak served a stale light CSS chunk — fixed by killing dev, `rm -rf .next`, restart. If theme ever looks light after a git restore, restart dev with a clean `.next`.
 
-**Verification (agent-browser E2E + curl + VLM design review):**
+**Verification (agent-browser E2E at both viewports + VLM design review):**
 
-- `bun run lint` clean; dev 200; no console/page errors.
-- Golden paths all verified in-browser: Check tab → example prefill → AI analysis (first attempt hit a transient LLM 502 which the UI surfaced gracefully with retry; retry succeeded → "Routine care" result fully rendered); Body tab → slider drag updates live BMI 22.5 → save → result + healthy range; History → day groups, expand details, delete via AlertDialog (DB count 7→6); Profile → dark-mode toggle flips `.dark` on `<html>` (VLM: "Excellent, passes WCAG AA"); `DELETE ?all=true` deleted 6 → 0 (then re-seeded 2 demo records).
-- Viewports: desktop 1440×900 (phone frame + showcase panel) and mobile 375×812 (full-screen app, 5-tab bar). VLM review of home screen: "high-fidelity, professional design… looks ready for development".
-- **Bugs found & fixed this round**: (1) quick-action cards had unequal heights (button didn't fill grid row → `h-full` fix; re-measured 147.5/147.5 + 128.75/128.75, VLM confirmed aligned); (2) on analysis error the banner grew the form and left the Analyze button hidden under the tab bar (now scrolls button back into view); (3) muted text contrast darkened (`--muted-foreground` 0.518→0.472); (4) tab bar backdrop opacity 85→92, icon-label gap widened; (5) **nested-`<button>` hydration error** — `ListRow` always rendered a `<button>`, and the Dark-mode row placed a Radix `Switch` (button) inside it; `ListRow` now renders `<a>`/`<button>`/`<div>` depending on `href`/`onClick` (console re-verified: 0 errors, toggle still works).
+- `bun run lint` clean. Dev 200. No console/page errors; dev.log clean.
+- Desktop 1440×900: dark neon page, phone mockup (dynamic island, status bar), app inside iframe renders landing (VLM: "high-fidelity, professional… no visual problems"). Showcase panel with feature list + Add-to-Home-Screen hint.
+- Mobile 375×812: raw app full-screen, dark bg `rgb(5,8,7)`, 5-tab bottom nav (VLM: "looks like a native mobile app… no glitches").
+- Golden paths: Symptom Checker — filled description + age 28 → "Analyze with AI" → LLM returned "Routine — non-urgent care" with summary, conditions (migraine/cluster/sinus/eye strain), self-care, red flags, saved to history. Body Analysis — 175cm/70kg → BMI 22.9 Normal, healthy 56.7–76.3 kg. Dashboard — stats (4 checks, 22.9 BMI, 4 records), BMI trend chart, recent activity. History — tabs + records with timestamps.
 
 ## 3. Unresolved Issues / Risks & Next-Phase Priorities
 
 **Known limitations / risks:**
 
-- LLM is occasionally flaky (one 502 mid-QA) — UI handles it cleanly with retry; acceptable
-- Emergency keyword triage is English-only; LLM path still instructed to return `emergency`
-- Single-user, no auth — by design for now (local personal app)
-- `severity` column stores either urgency level or BMI category (union) — tone-mapping handles both, but a future schema could split them
-- Wellness score is a simple heuristic (activity + latest BMI), not medical
+- LLM occasionally flaky (502 seen in an earlier round) — UI surfaces a retry state; acceptable.
+- Emergency keyword triage is English-only; LLM path still instructed to return `emergency`.
+- Single-user, no auth — by design for now (local personal app).
+- The `severity` column stores urgency level or BMI category (union) — tone-mapping handles both; a future schema could split them.
+- Desktop presentation relies on the iframe trick — if a future change adds URL params/routing, verify the iframe still resolves `embedded` (it uses `window.self !== window.top`, so URLs stay clean).
 
-**Next-phase priorities (recommended order):**
+**Next-phase priorities (recommended order) — all must preserve the exact dark-neon theme:**
 
-1. **Medication & interaction awareness module** (5th tab is reserved already? No — currently 5 tabs used; add module as a Home card + section, or replace: consider ` meds` quick-action card → new screen): `POST /api/v1/medications/interactions` — LLM with strict "never the sole authority" framing + curated static top-interactions list
-2. **Smart reminders** — `Reminder` Prisma model + CRUD `/api/v1/reminders` + Home widget + browser notifications (great fit for a mobile app)
-3. **Report explainer** — paste lab values, deterministic out-of-range flagging + LLM plain-language summary
-4. Home polish: weekly urgency-mix chart; streaks; pull-to-refresh feel
-5. i18n (Hindi/Marathi) emergency keywords; 108 already surfaced in UI
+1. **Report Explainer module** — paste lab values, deterministic out-of-range flagging + LLM plain-language summary (new view + `POST /api/v1/reports/explain`; add tab or Home card)
+2. **Medication & interaction awareness** — `POST /api/v1/medications/interactions` with "never the sole authority" framing + curated static list
+3. **Smart reminders** — `Reminder` model + CRUD + Home widget + browser notifications
+4. Home polish: weekly urgency-mix chart, streaks, pull-to-refresh feel
+5. i18n (Hindi/Marathi) emergency keywords; 108/112 surfaced in UI
 6. Rotate/revoke the GitHub token when the project is considered finished
