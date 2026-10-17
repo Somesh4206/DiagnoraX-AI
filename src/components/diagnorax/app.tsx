@@ -1,205 +1,233 @@
 'use client'
 
-/* DiagnoraX AI — mobile app shell.
- * Single-route app (platform rule): screens are switched client-side,
- * rendered inside a phone frame (desktop) or full-screen (mobile).
- */
-
-import * as React from 'react'
-import Image from 'next/image'
+import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bell, CircleCheck } from 'lucide-react'
-import { PhoneFrame } from './phone-frame'
-import { TabBar, type TabId } from './tab-bar'
-import { api, ApiError, type HealthRecordItem } from './api'
-import { HomeScreen } from './screens/home'
-import { SymptomsScreen } from './screens/symptoms'
-import { BodyScreen } from './screens/body'
-import { HistoryScreen } from './screens/history'
-import { ProfileScreen } from './screens/profile'
+import {
+  Activity,
+  History as HistoryIcon,
+  Home,
+  LayoutDashboard,
+  Scale,
+  Siren,
+  Stethoscope,
+  type LucideIcon,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { VIEW_LABEL, MEDICAL_DISCLAIMER, type View } from './ui-bits'
+import { LandingView } from './landing'
+import { DashboardView } from './dashboard'
+import { SymptomCheckerView } from './symptoms'
+import { BodyAnalysisView } from './body'
+import { HistoryView } from './history'
 
-/* ---------- toast (in-app, native style) ---------- */
-
-export type ToastTone = 'default' | 'success' | 'error'
-interface AppToast {
-  id: number
-  message: string
-  tone: ToastTone
-}
-
-/* ---------- per-screen header config ---------- */
-
-const HEADERS: Record<TabId, { title: string; subtitle: string }> = {
-  home: { title: '', subtitle: '' },
-  check: { title: 'Symptom Check', subtitle: 'AI-powered guidance in seconds' },
-  body: { title: 'Body Lab', subtitle: 'BMI & healthy weight range' },
-  history: { title: 'History', subtitle: 'Your past checks' },
-  profile: { title: 'Profile', subtitle: 'Preferences & your data' },
-}
+const NAV: { view: View; icon: LucideIcon }[] = [
+  { view: 'home', icon: Home },
+  { view: 'dashboard', icon: LayoutDashboard },
+  { view: 'symptoms', icon: Stethoscope },
+  { view: 'body', icon: Scale },
+  { view: 'history', icon: HistoryIcon },
+]
 
 export function DiagnoraXApp() {
-  const [tab, setTab] = React.useState<TabId>('home')
-  const [records, setRecords] = React.useState<HealthRecordItem[]>([])
-  const [recordsLoading, setRecordsLoading] = React.useState(true)
-  const [toast, setToast] = React.useState<AppToast | null>(null)
-  const scrollRef = React.useRef<HTMLDivElement>(null)
+  const [view, setView] = useState<View>('home')
+  const navigate = useCallback((v: View) => setView(v), [])
 
-  const notify = React.useCallback((message: string, tone: ToastTone = 'default') => {
-    setToast({ id: Date.now(), message, tone })
-  }, [])
-
-  React.useEffect(() => {
-    if (!toast) return
-    const id = setTimeout(() => setToast(null), 2600)
-    return () => clearTimeout(id)
-  }, [toast])
-
-  const refreshRecords = React.useCallback(async () => {
-    try {
-      const { records } = await api.listRecords({ limit: 100 })
-      setRecords(records)
-    } catch (err) {
-      notify(err instanceof ApiError ? err.message : 'Could not load history.', 'error')
-    } finally {
-      setRecordsLoading(false)
-    }
-  }, [notify])
-
-  React.useEffect(() => {
-    void refreshRecords()
-  }, [refreshRecords])
-
-  // Reset scroll to top on every tab change, like a native app.
-  React.useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0 })
-  }, [tab])
-
-  const go = React.useCallback((next: TabId) => setTab(next), [])
-
-  const header = HEADERS[tab]
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [view])
 
   return (
-    <PhoneFrame>
-      {/* ------- App header (fixed above scrolling content) ------- */}
-      <header className="relative z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background/90 px-5 backdrop-blur">
-        {tab === 'home' ? (
-          <>
-            <div className="flex items-center gap-2.5">
-              <Image
-                src="/icon-1024.png"
-                alt="DiagnoraX AI"
-                width={30}
-                height={30}
-                className="rounded-[9px]"
-                priority
-              />
-              <div className="leading-tight">
-                <p className="text-[15px] font-extrabold tracking-tight">DiagnoraX</p>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
-                  Health Companion
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                aria-label="Notifications"
-                onClick={() => notify("You're all caught up — no new alerts.")}
-                className="relative flex h-9 w-9 items-center justify-center rounded-full bg-muted outline-none transition-transform active:scale-90"
-              >
-                <Bell className="h-[18px] w-[18px] text-foreground/70" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
-              </button>
-              <button
-                type="button"
-                aria-label="Open profile"
-                onClick={() => go('profile')}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-[13px] font-bold text-white outline-none transition-transform active:scale-90"
-              >
-                Y
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="leading-tight">
-              <h1 className="text-[17px] font-extrabold tracking-tight">{header.title}</h1>
-              <p className="text-[11px] text-muted-foreground">{header.subtitle}</p>
-            </div>
-            <button
-              type="button"
-              aria-label="Open profile"
-              onClick={() => go('profile')}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-[13px] font-bold text-white outline-none transition-transform active:scale-90"
-            >
-              Y
-            </button>
-          </>
-        )}
+    <div className="flex min-h-screen flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-neon focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
+
+      {/* ---------- header ---------- */}
+      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+          <button
+            onClick={() => navigate('home')}
+            className="flex items-center gap-2.5 rounded-lg px-1 py-1 text-left"
+            aria-label="DiagnoraX AI — go to home"
+          >
+            <span className="rounded-lg border border-neon/40 bg-neon/10 p-1.5 shadow-[0_0_14px_rgba(0,255,163,.25)]">
+              <Activity className="size-4 text-neon" aria-hidden />
+            </span>
+            <span className="text-base font-semibold tracking-tight">
+              DiagnoraX<span className="text-neon"> AI</span>
+            </span>
+          </button>
+
+          <nav aria-label="Primary" className="hidden md:block">
+            <ul className="flex items-center gap-1">
+              {NAV.map((n) => {
+                const active = view === n.view
+                return (
+                  <li key={n.view} className="relative">
+                    <button
+                      onClick={() => navigate(n.view)}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'relative rounded-md px-3 py-2 text-sm transition-colors',
+                        active
+                          ? 'font-medium text-neon'
+                          : 'text-text-2 hover:text-foreground'
+                      )}
+                    >
+                      {VIEW_LABEL[n.view]}
+                      {active ? (
+                        <span
+                          aria-hidden
+                          className="absolute inset-x-3 -bottom-[13px] h-[2px] rounded-full bg-neon shadow-[0_0_10px_rgba(0,255,163,.8)]"
+                        />
+                      ) : null}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
+          <p className="hidden items-center gap-1.5 text-[11px] leading-tight text-text-3 lg:flex">
+            <Siren className="size-3.5 shrink-0 text-danger/90" aria-hidden />
+            In an emergency, call your local emergency services.
+          </p>
+        </div>
       </header>
 
-      {/* ------- Screens (scrollable app content) ------- */}
-      <div ref={scrollRef} className="relative flex-1 overflow-y-auto no-scrollbar">
-        <AnimatePresence mode="wait" initial={false}>
+      {/* ---------- main ---------- */}
+      <main id="main" className="flex-1 pb-24 md:pb-0">
+        <AnimatePresence mode="wait">
           <motion.div
-            key={tab}
-            initial={{ opacity: 0, y: 12 }}
+            key={view}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.19, ease: 'easeOut' }}
-            className="min-h-full"
+            transition={{ duration: 0.22, ease: 'easeOut' }}
           >
-            {tab === 'home' && (
-              <HomeScreen records={records} loading={recordsLoading} go={go} notify={notify} />
-            )}
-            {tab === 'check' && (
-              <SymptomsScreen go={go} notify={notify} onSaved={() => void refreshRecords()} />
-            )}
-            {tab === 'body' && (
-              <BodyScreen notify={notify} onSaved={() => void refreshRecords()} />
-            )}
-            {tab === 'history' && (
-              <HistoryScreen
-                records={records}
-                loading={recordsLoading}
-                go={go}
-                notify={notify}
-                onRefresh={() => void refreshRecords()}
-              />
-            )}
-            {tab === 'profile' && (
-              <ProfileScreen records={records} notify={notify} onRefresh={() => void refreshRecords()} />
-            )}
+            {view === 'home' ? <LandingView onNavigate={navigate} /> : null}
+            {view === 'dashboard' ? <DashboardView onNavigate={navigate} /> : null}
+            {view === 'symptoms' ? <SymptomCheckerView onNavigate={navigate} /> : null}
+            {view === 'body' ? <BodyAnalysisView onNavigate={navigate} /> : null}
+            {view === 'history' ? <HistoryView onNavigate={navigate} /> : null}
           </motion.div>
         </AnimatePresence>
-        {/* clearance so content is never hidden behind the tab bar */}
-        <div className="h-28" aria-hidden />
-      </div>
+      </main>
 
-      {/* ------- Bottom tab navigation ------- */}
-      <TabBar active={tab} onChange={go} />
+      {/* ---------- footer ---------- */}
+      <Footer onNavigate={navigate} />
 
-      {/* ------- In-app toast (inside the phone, native style) ------- */}
-      <div
-        aria-live="polite"
-        className="pointer-events-none absolute inset-x-0 bottom-[92px] z-40 flex justify-center px-6"
+      {/* ---------- mobile bottom nav ---------- */}
+      <nav
+        aria-label="Primary mobile"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-border/80 bg-background/90 backdrop-blur-md md:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <AnimatePresence>
-          {toast && (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, y: 14, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.98 }}
-              transition={{ duration: 0.18 }}
-              className="flex max-w-full items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-[13px] font-medium text-background shadow-xl"
-            >
-              {toast.tone === 'success' && <CircleCheck className="h-4 w-4 shrink-0 text-emerald-400" />}
-              <span className="truncate">{toast.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ul className="grid grid-cols-5">
+          {NAV.map((n) => {
+            const active = view === n.view
+            return (
+              <li key={n.view}>
+                <button
+                  onClick={() => navigate(n.view)}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex w-full flex-col items-center gap-1 px-1 pb-1.5 pt-2 text-[10px] font-medium transition-colors',
+                    active ? 'text-neon' : 'text-text-3'
+                  )}
+                >
+                  <n.icon
+                    className={cn('size-5', active && 'drop-shadow-[0_0_8px_rgba(0,255,163,.9)]')}
+                    aria-hidden
+                  />
+                  {VIEW_LABEL[n.view]}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+    </div>
+  )
+}
+
+/* ---------- footer ---------- */
+
+function Footer({ onNavigate }: { onNavigate: (v: View) => void }) {
+  const liveLinks: { view: View; label: string }[] = [
+    { view: 'home', label: 'Home' },
+    { view: 'dashboard', label: 'Dashboard' },
+    { view: 'symptoms', label: 'Symptom Check' },
+    { view: 'body', label: 'Body Analysis' },
+    { view: 'history', label: 'History' },
+  ]
+  const planned = ['Report Explainer', 'Smart Reminders', 'Doctor Finder']
+
+  return (
+    <footer className="mt-auto border-t border-border/60 bg-secondary/30">
+      <div className="mx-auto max-w-6xl px-4 pb-24 pt-12 sm:px-6 md:pb-10">
+        <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr]">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span className="rounded-lg border border-neon/40 bg-neon/10 p-1.5">
+                <Activity className="size-4 text-neon" aria-hidden />
+              </span>
+              <span className="text-base font-semibold tracking-tight">
+                DiagnoraX<span className="text-neon"> AI</span>
+              </span>
+            </div>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-text-2">
+              Your personal AI health companion. Information you can act on — not a diagnosis.
+            </p>
+            <p className="mt-4 max-w-md text-[11px] leading-relaxed text-text-3">
+              {MEDICAL_DISCLAIMER}
+            </p>
+          </div>
+
+          <nav aria-label="Live modules">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-text-3">
+              Live modules
+            </h3>
+            <ul className="mt-4 space-y-2.5">
+              {liveLinks.map((l) => (
+                <li key={l.view}>
+                  <button
+                    onClick={() => onNavigate(l.view)}
+                    className="text-sm text-text-2 transition-colors hover:text-neon"
+                  >
+                    {l.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-text-3">Roadmap</h3>
+            <ul className="mt-4 space-y-2.5">
+              {planned.map((p) => (
+                <li key={p} className="flex items-center gap-2 text-sm text-text-3">
+                  {p}
+                  <span className="rounded-full border border-border bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider">
+                    Planned
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-[11px] leading-relaxed text-text-3">
+              Roadmap items ship when they meet the same quality bar as the live modules.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-10 flex flex-col gap-2 border-t border-border/60 pt-6 text-xs text-text-3 sm:flex-row sm:items-center sm:justify-between">
+          <p>© 2026 DiagnoraX AI · Built by Somesh M</p>
+          <p>Not a medical device · No data leaves your device</p>
+        </div>
       </div>
-    </PhoneFrame>
+    </footer>
   )
 }

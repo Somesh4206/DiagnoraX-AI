@@ -1,356 +1,285 @@
 'use client'
 
-/* DiagnoraX AI — shared mobile app widgets */
-
-import * as React from 'react'
-import { motion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import {
+  CheckCircle2,
+  CircleAlert,
+  Inbox,
+  Info,
+  Loader2,
+  RotateCcw,
+  ShieldCheck,
   Siren,
-  AlarmClock,
   Stethoscope,
-  Leaf,
-  ChevronRight,
+  Scale,
+  TriangleAlert,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import type { UrgencyLevel } from './api'
+import { Button } from '@/components/ui/button'
 
-/* ---------- urgency + category metadata ---------- */
+/* ---------- app navigation ---------- */
 
-export const URGENCY_META: Record<
+export type View = 'home' | 'dashboard' | 'symptoms' | 'body' | 'history'
+
+export const VIEW_LABEL: Record<View, string> = {
+  home: 'Home',
+  dashboard: 'Dashboard',
+  symptoms: 'Symptom Check',
+  body: 'Body Analysis',
+  history: 'History',
+}
+
+/* ---------- urgency system ---------- */
+
+export type UrgencyLevel = 'emergency' | 'urgent' | 'routine' | 'low'
+
+export const URGENCY: Record<
   UrgencyLevel,
-  { label: string; icon: LucideIcon; chip: string; banner: string }
+  { label: string; short: string; icon: LucideIcon; chip: string; bar: string; dot: string }
 > = {
   emergency: {
-    label: 'Emergency',
+    label: 'Emergency — act now',
+    short: 'Emergency',
     icon: Siren,
-    chip: 'bg-destructive/12 text-destructive border-destructive/25',
-    banner: 'bg-destructive/8 border-destructive/30',
+    chip: 'border-danger/45 bg-danger/10 text-danger',
+    bar: 'bg-danger',
+    dot: 'bg-danger',
   },
   urgent: {
-    label: 'See a doctor soon',
-    icon: AlarmClock,
-    chip: 'bg-warning/15 text-amber-700 dark:text-amber-400 border-warning/40',
-    banner: 'bg-warning/10 border-warning/40',
+    label: 'Urgent — see a doctor soon',
+    short: 'Urgent',
+    icon: TriangleAlert,
+    chip: 'border-warn/45 bg-warn/10 text-warn',
+    bar: 'bg-warn',
+    dot: 'bg-warn',
   },
   routine: {
-    label: 'Routine care',
-    icon: Stethoscope,
-    chip: 'bg-primary/10 text-primary border-primary/25',
-    banner: 'bg-primary/8 border-primary/25',
+    label: 'Routine — non-urgent care',
+    short: 'Routine',
+    icon: CircleAlert,
+    chip: 'border-cyan/40 bg-cyan/10 text-cyan',
+    bar: 'bg-cyan',
+    dot: 'bg-cyan',
   },
   low: {
-    label: 'Self-care likely fine',
-    icon: Leaf,
-    chip: 'bg-teal-accent/12 text-teal-accent border-teal-accent/30',
-    banner: 'bg-teal-accent/8 border-teal-accent/25',
+    label: 'Low — self-care likely fine',
+    short: 'Low',
+    icon: CheckCircle2,
+    chip: 'border-neon/40 bg-neon/10 text-neon',
+    bar: 'bg-neon',
+    dot: 'bg-neon',
   },
 }
 
-export function urgencyMeta(level: string) {
-  return URGENCY_META[level as UrgencyLevel] ?? URGENCY_META.routine
-}
-
-export function bodyCategoryTone(category: string | null | undefined) {
-  if (!category) return 'bg-muted text-muted-foreground border-border'
-  if (category.startsWith('Normal')) return 'bg-primary/10 text-primary border-primary/25'
-  if (category.startsWith('Underweight')) return 'bg-teal-accent/12 text-teal-accent border-teal-accent/30'
-  if (category.startsWith('Overweight')) return 'bg-warning/15 text-amber-700 dark:text-amber-400 border-warning/40'
-  return 'bg-destructive/12 text-destructive border-destructive/25'
-}
-
-/* ---------- chips & badges ---------- */
-
-export function Chip({
-  children,
-  className,
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
+export function UrgencyBadge({ level, className }: { level: UrgencyLevel; className?: string }) {
+  const u = URGENCY[level] ?? URGENCY.routine
+  const Icon = u.icon
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold leading-5',
-        className,
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide',
+        u.chip,
+        className
       )}
     >
-      {children}
+      <Icon className="size-3.5" aria-hidden />
+      {u.short}
     </span>
   )
 }
 
-export function IconBadge({
-  icon: Icon,
-  tone = 'emerald',
-  className,
-  iconClassName,
-}: {
-  icon: LucideIcon
-  tone?: 'emerald' | 'amber' | 'red' | 'teal' | 'slate'
-  className?: string
-  iconClassName?: string
-}) {
-  const tones: Record<string, string> = {
-    emerald: 'bg-primary/12 text-primary',
-    amber: 'bg-warning/18 text-amber-700 dark:text-amber-400',
-    red: 'bg-destructive/12 text-destructive',
-    teal: 'bg-teal-accent/14 text-teal-accent',
-    slate: 'bg-muted text-muted-foreground',
-  }
-  return (
-    <span
-      className={cn(
-        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-        tones[tone],
-        className,
-      )}
-    >
-      <Icon className={cn('h-5 w-5', iconClassName)} strokeWidth={2.2} />
-    </span>
-  )
+/* ---------- record helpers ---------- */
+
+export type RecordType = 'SYMPTOM_CHECK' | 'BODY_ANALYSIS'
+
+export const RECORD_TYPE_META: Record<RecordType, { label: string; icon: LucideIcon }> = {
+  SYMPTOM_CHECK: { label: 'Symptom check', icon: Stethoscope },
+  BODY_ANALYSIS: { label: 'Body analysis', icon: Scale },
 }
 
-/* ---------- layout helpers ---------- */
-
-export function ScreenSection({
-  children,
-  className,
-}: {
-  children: React.ReactNode
-  className?: string
-}) {
-  return <section className={cn('px-5', className)}>{children}</section>
-}
-
-export function SectionTitle({
-  children,
-  action,
-}: {
-  children: React.ReactNode
-  action?: React.ReactNode
-}) {
-  return (
-    <div className="mb-3 flex items-center justify-between">
-      <h2 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground">
-        {children}
-      </h2>
-      {action}
-    </div>
-  )
-}
-
-export function TapButton({
-  children,
-  onClick,
-  className,
-  ariaLabel,
-  disabled,
-}: {
-  children: React.ReactNode
-  onClick?: () => void
-  className?: string
-  ariaLabel?: string
-  disabled?: boolean
-}) {
-  return (
-    <motion.button
-      type="button"
-      aria-label={ariaLabel}
-      disabled={disabled}
-      whileTap={{ scale: 0.97 }}
-      onClick={onClick}
-      className={cn(
-        'text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60 rounded-2xl disabled:opacity-50',
-        className,
-      )}
-    >
-      {children}
-    </motion.button>
-  )
-}
-
-export function EmptyState({
-  icon: Icon,
-  title,
-  hint,
-  action,
-}: {
-  icon: LucideIcon
-  title: string
-  hint: string
-  action?: React.ReactNode
-}) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-12 text-center">
-      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-        <Icon className="h-7 w-7 text-muted-foreground" strokeWidth={1.8} />
-      </span>
-      <div>
-        <p className="font-semibold">{title}</p>
-        <p className="mt-1 max-w-[240px] text-sm text-muted-foreground">{hint}</p>
-      </div>
-      {action}
-    </div>
-  )
-}
-
-export function ListRow({
-  icon: Icon,
-  iconTone = 'slate',
-  title,
-  subtitle,
-  right,
-  onClick,
-  href,
-  className,
-}: {
-  icon: LucideIcon
-  iconTone?: 'emerald' | 'amber' | 'red' | 'teal' | 'slate'
-  title: string
-  subtitle?: string
-  right?: React.ReactNode
-  onClick?: () => void
-  href?: string
-  className?: string
-}) {
-  const inner = (
-    <>
-      <IconBadge icon={Icon} tone={iconTone} className="h-9 w-9 rounded-[10px]" iconClassName="h-4 w-4" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold leading-tight">{title}</p>
-        {subtitle && <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{subtitle}</p>}
-      </div>
-      {right ?? (onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />)}
-    </>
-  )
-  const cls = cn(
-    'flex w-full items-center gap-3 px-4 py-3 text-left',
-    className,
-  )
-  if (href) {
-    return (
-      <a href={href} className={cls}>
-        {inner}
-      </a>
-    )
-  }
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className={cls}>
-        {inner}
-      </button>
-    )
-  }
-  // Static row (may contain interactive controls like a Switch — must NOT be a <button>)
-  return <div className={cls}>{inner}</div>
-}
-
-/* ---------- segmented control (iOS style) ---------- */
-
-export function SegmentedControl<T extends string>({
-  options,
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  options: { value: T; label: string }[]
-  value: T | null
-  onChange: (v: T) => void
-  ariaLabel: string
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label={ariaLabel}
-      className="grid auto-cols-fr grid-flow-col gap-1 rounded-xl bg-muted p-1"
-    >
-      {options.map((opt) => {
-        const active = value === opt.value
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              'rounded-lg py-2 text-[13px] font-semibold transition-colors',
-              active
-                ? 'bg-card text-foreground shadow-[0_1px_3px_rgb(0_0_0/0.1)]'
-                : 'text-muted-foreground',
-            )}
-          >
-            {opt.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ---------- selection chips ---------- */
-
-export function SelectChips<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: T[]
-  value: T | null
-  onChange: (v: T) => void
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => {
-        const active = value === opt
-        return (
-          <button
-            key={opt}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onChange(opt)}
-            className={cn(
-              'rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors',
-              active
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-card text-muted-foreground',
-            )}
-          >
-            {opt}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ---------- time formatting ---------- */
-
-export function timeAgo(iso: string): string {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
-  if (s < 60) return 'just now'
-  const m = Math.floor(s / 60)
+export function relTime(iso: string): string {
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return ''
+  const diff = Date.now() - then
+  if (diff < 45_000) return 'just now'
+  const m = Math.floor(diff / 60_000)
   if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
   if (h < 24) return `${h}h ago`
   const d = Math.floor(h / 24)
   if (d < 7) return `${d}d ago`
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-export function dayGroupLabel(iso: string): string {
+export function fmtDate(iso: string): string {
   const d = new Date(iso)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(today.getDate() - 1)
-  const sameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-  if (sameDay(d, today)) return 'Today'
-  if (sameDay(d, yesterday)) return 'Yesterday'
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
-export function clockTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
+/* ---------- layout blocks ---------- */
+
+export function ViewHeader({
+  title,
+  sub,
+  right,
+}: {
+  title: string
+  sub?: string
+  right?: ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        {sub ? <p className="mt-1 text-sm text-text-2">{sub}</p> : null}
+      </div>
+      {right}
+    </div>
+  )
+}
+
+export function SectionHead({
+  eyebrow,
+  title,
+  sub,
+  className,
+}: {
+  eyebrow: string
+  title: string
+  sub?: string
+  className?: string
+}) {
+  return (
+    <div className={cn('mx-auto max-w-2xl text-center', className)}>
+      <span className="chip-neon inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]">
+        {eyebrow}
+      </span>
+      <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h2>
+      {sub ? <p className="mt-3 text-base text-text-2">{sub}</p> : null}
+    </div>
+  )
+}
+
+/* ---------- states ---------- */
+
+export function AIThinking({ label = 'AI is analyzing your symptoms…' }: { label?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-14 text-center" role="status" aria-live="polite">
+      <div className="flex items-center gap-1.5" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="dot-pulse size-2 rounded-full bg-neon shadow-[0_0_10px_rgba(0,255,163,.7)]" />
+        ))}
+      </div>
+      <div>
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="mt-1 text-xs text-text-3">Typically under 30 seconds.</p>
+      </div>
+    </div>
+  )
+}
+
+export function LoadingState({ label = 'Loading…' }: { label?: string }) {
+  return (
+    <div className="flex items-center justify-center gap-3 py-14 text-sm text-text-2" role="status">
+      <Loader2 className="size-4 animate-spin text-neon" aria-hidden />
+      {label}
+    </div>
+  )
+}
+
+export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="flex flex-col items-center justify-center gap-4 rounded-lg border border-danger/30 bg-danger/5 px-6 py-12 text-center"
+    >
+      <TriangleAlert className="size-8 text-danger" aria-hidden />
+      <div>
+        <p className="text-sm font-semibold text-foreground">Something went wrong</p>
+        <p className="mt-1 max-w-sm text-xs leading-relaxed text-text-2">{message}</p>
+      </div>
+      {onRetry ? (
+        <Button variant="outline" size="sm" onClick={onRetry} className="border-danger/40 hover:border-danger/70">
+          <RotateCcw className="size-3.5" aria-hidden /> Try again
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+export function EmptyState({
+  title,
+  hint,
+  action,
+}: {
+  title: string
+  hint?: string
+  action?: { label: string; onClick: () => void }
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border px-6 py-14 text-center">
+      <div className="rounded-xl border border-border bg-elevated p-3">
+        <Inbox className="size-6 text-text-3" aria-hidden />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        {hint ? <p className="mt-1 max-w-sm text-xs leading-relaxed text-text-2">{hint}</p> : null}
+      </div>
+      {action ? (
+        <Button size="sm" onClick={action.onClick} className="glow-primary glow-primary-hover">
+          {action.label}
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+/* ---------- safety / trust ---------- */
+
+export const MEDICAL_DISCLAIMER =
+  'DiagnoraX AI provides health information, not medical advice. It is not a substitute for professional diagnosis or treatment. In an emergency, contact your local emergency services immediately.'
+
+export function DisclaimerNote({ className, compact }: { className?: string; compact?: boolean }) {
+  return (
+    <p
+      className={cn(
+        'flex items-start gap-2 rounded-lg border border-border bg-muted/40 text-text-2',
+        compact ? 'px-3 py-2 text-[11px] leading-relaxed' : 'px-4 py-3 text-xs leading-relaxed',
+        className
+      )}
+    >
+      <Info className={cn('mt-0.5 shrink-0 text-neon/80', compact ? 'size-3' : 'size-3.5')} aria-hidden />
+      <span>{MEDICAL_DISCLAIMER}</span>
+    </p>
+  )
+}
+
+export function TrustRow({ className }: { className?: string }) {
+  const items = ['Informational only', 'Not a medical device', 'Data stays local']
+  return (
+    <ul className={cn('flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-text-2', className)}>
+      {items.map((t) => (
+        <li key={t} className="inline-flex items-center gap-1.5">
+          <ShieldCheck className="size-3.5 text-neon/80" aria-hidden />
+          {t}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export function FieldError({ msg }: { msg?: string | null }) {
+  if (!msg) return null
+  return (
+    <p role="alert" className="mt-1.5 text-xs text-danger">
+      {msg}
+    </p>
+  )
 }

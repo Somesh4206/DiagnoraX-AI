@@ -1,6 +1,8 @@
 /* DiagnoraX AI — typed API client (frontend).
  * All endpoints are same-origin relative paths served by this Next.js app. */
 
+import type { UrgencyLevel } from './ui-bits'
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -35,8 +37,7 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
 
 /* ---------- shared types ---------- */
 
-export type UrgencyLevel = 'emergency' | 'urgent' | 'routine' | 'low'
-export type Sex = 'male' | 'female' | 'other'
+export type Sex = 'male' | 'female' | 'other' | 'unspecified'
 
 export interface PossibleCondition {
   name: string
@@ -105,8 +106,6 @@ export interface HealthRecordItem {
   data: Record<string, unknown> & {
     analysis?: SymptomAnalysis
     result?: BodyAnalysisResult
-    input?: { heightCm?: number; weightKg?: number }
-    engine?: string
   }
 }
 
@@ -137,12 +136,6 @@ export const api = {
 
   deleteRecord(id: string) {
     return jsonFetch<{ ok: true }>(`/api/v1/records?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    })
-  },
-
-  deleteAllRecords() {
-    return jsonFetch<{ ok: true; deleted: number }>('/api/v1/records?all=true', {
       method: 'DELETE',
     })
   },

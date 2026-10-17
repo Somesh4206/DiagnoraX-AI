@@ -1,6 +1,6 @@
 # 📱 DiagnoraX AI
 
-**Your Personal AI Health Companion** — a mobile-first health app that helps you understand symptoms, track body metrics, and keep a private history of your checks — all in your pocket.
+**Your Personal AI Health Companion** — a dark-neon mobile health app that helps you understand symptoms, track body metrics, and keep a private history of your checks — all in your pocket.
 
 > ⚠️ **Medical Disclaimer** — DiagnoraX AI provides health *information*, not medical *advice*. It is not a substitute for professional diagnosis or treatment. In an emergency, contact your local emergency services immediately.
 
@@ -8,24 +8,31 @@
 
 | Area | State |
 |---|---|
-| Mobile app shell (phone frame, bottom tabs, native feel) | ✅ Complete |
+| Mobile app shell (phone mockup on desktop, bottom tab bar, boot splash) | ✅ Complete |
 | Database layer (Prisma + SQLite) | ✅ Complete |
 | AI Symptom Checker (LLM + deterministic emergency triage) | ✅ Live |
-| Body Lab — BMI with healthy weight range (deterministic) | ✅ Live |
-| History — search, filters, expandable details, delete | ✅ Live |
-| Profile — dark mode, emergency numbers, export / clear data | ✅ Live |
-| Medication awareness · Report explainer · Reminders | 📋 Planned |
+| Body Analysis — BMI with healthy weight range (deterministic) | ✅ Live |
+| Dashboard — stats, BMI trend chart, recent activity | ✅ Live |
+| History — tabs, search, expandable details, delete | ✅ Live |
+| Report explainer · Medication awareness · Reminders | 📋 Planned |
 
-The app is a **single-route mobile experience**: on a phone it fills the screen and can be installed to the home screen (PWA manifest included); on desktop it renders inside a phone mockup so it always previews as the mobile app it is.
+The app is a **single-route mobile experience**: on a phone it fills the screen edge-to-edge and can be installed to the home screen (PWA manifest included); on desktop it renders inside a phone mockup so it always previews as the mobile app it is.
+
+## 🎨 Design — Dark Neon Medical
+
+Fixed dark theme, exactly as originally assigned:
+
+- Background `#050807` · cards `#0D1712` · elevated `#122019` · borders `#1C3529`
+- Neon green `#00FFA3` (primary) · cyan `#40D9FF` · warn `#FFBF47` · danger `#FF4D6D`
+- Neon glow accents, animated ECG hero, grid backdrop, dot-pulse AI thinking states
 
 ## ✨ Features
 
 - **AI Symptom Checker** — describe symptoms in plain words; get an urgency level, commonly-reported conditions, self-care steps, and red flags. Emergency keywords (chest pain, stroke signs…) trigger a **deterministic triage before any AI call**
-- **Health Snapshot** — wellness ring + quick stats on the Home screen
-- **Body Lab** — BMI with live sliders, category scale, healthy weight range, honest caveats
-- **Private History** — every check is saved on-device; search, filter, expand, delete, export as JSON, or wipe everything
-- **Emergency numbers** — one-tap 108 (ambulance) / 112 (India) from Home and Profile
-- **Light & dark themes** — light-first medical design, dark mode toggle in Profile
+- **Body Analysis** — BMI with healthy weight range, formula transparency, honest caveats. Deterministic arithmetic, never an LLM guess
+- **Dashboard** — greeting, stat cards, BMI trend chart (Recharts) with healthy band, recent activity, quick actions
+- **Private History** — every check is saved locally; filter by type, search, expand details, delete
+- **Animated ECG hero** — canvas-rendered cardiac monitor demo (clearly labeled, not a real reading)
 
 ## 🛠 Tech Stack
 
@@ -35,8 +42,7 @@ The app is a **single-route mobile experience**: on a phone it fills the screen 
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS 4 + shadcn/ui (New York style) |
 | Database | Prisma ORM with SQLite |
-| State | Zustand (client) · TanStack Query (server) |
-| Auth | NextAuth.js v4 (available) |
+| Charts | Recharts |
 | Runtime | Bun |
 | AI | z-ai-web-dev-sdk (server-side only) |
 
@@ -79,8 +85,8 @@ The app runs on **http://localhost:3000**.
 ├── prisma/          # Database schema (Prisma)
 ├── db/              # SQLite database files (gitignored)
 ├── src/
-│   ├── app/         # App Router pages & API routes
-│   ├── components/  # UI components (shadcn/ui + custom)
+│   ├── app/         # App Router page & API routes (/api/v1/...)
+│   ├── components/  # shadcn/ui + diagnorax/ app components
 │   ├── hooks/       # Reusable React hooks
 │   └── lib/         # Utilities, Prisma client
 ├── mini-services/   # Optional standalone services (e.g. websocket)
@@ -92,12 +98,12 @@ The app runs on **http://localhost:3000**.
 
 ## 🗺 Roadmap
 
-- [x] Phase 1 — Mobile app shell & visual identity
-- [x] Phase 2 — Home dashboard (wellness ring, quick actions, recent activity)
+- [x] Phase 1 — Dark neon design system & app shell
+- [x] Phase 2 — Landing with animated ECG hero
 - [x] Phase 3 — AI symptom checker (API + UI + emergency triage)
-- [x] Phase 4 — Body Lab, history & persistence
-- [x] Phase 5 — Profile: themes, emergency numbers, data export & wipe
-- [ ] Phase 6 — Medication awareness, report explainer, reminders
+- [x] Phase 4 — Body analysis, dashboard & history persistence
+- [x] Phase 5 — Mobile-app presentation (phone mockup, PWA install)
+- [ ] Phase 6 — Report explainer, medication awareness, reminders
 
 ## 👤 Author
 
