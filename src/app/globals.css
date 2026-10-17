@@ -201,12 +201,6 @@
   }
 
   /* --- misc --- */
-  .line-clamp-2-fix {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
   .scrollbar-neon {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 255, 163, 0.35) transparent;

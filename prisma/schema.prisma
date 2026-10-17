@@ -1,6 +1,6 @@
-// DiagnoraX AI — Prisma schema (SQLite)
-// Health records are the single source of truth for the symptom checker,
-// body analysis, dashboard stats and history views.
+// DiagnoraX AI — Prisma schema (fresh rebuild)
+// A single HealthRecord table is the source of truth for the app's history,
+// stats and trend views.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,18 +11,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// One row per analysis run (AI symptom check or deterministic body analysis).
-// `data` holds the full structured payload as JSON (SQLite has no list types).
+// One row per completed analysis run.
+//   type: "SYMPTOM_CHECK" | "BODY_ANALYSIS"
+//   severity: SYMPTOM_CHECK → urgency level (emergency|urgent|routine|low)
+//             BODY_ANALYSIS → BMI category label
+//   data: full structured payload as JSON (SQLite has no list types).
 model HealthRecord {
   id        String   @id @default(cuid())
-  // "SYMPTOM_CHECK" | "BODY_ANALYSIS"
   type      String
   title     String
   summary   String
-  // SYMPTOM_CHECK → urgency level ("emergency" | "urgent" | "routine" | "low")
-  // BODY_ANALYSIS → BMI category label
   severity  String?
-  // full structured payload as JSON (analysis or result object + input echo)
   data      String
   createdAt DateTime @default(now())
 

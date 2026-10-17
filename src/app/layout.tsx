@@ -16,14 +16,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DiagnoraX AI — Your Personal AI Health Companion",
   description:
-    "Describe symptoms in plain language and get a structured informational analysis with clear next steps. Health information, not medical advice. Data stays local.",
+    "A private, dark-neon mobile health app: AI symptom guidance, body metrics and a health history that never leaves your device. Health information, not medical advice.",
   keywords: [
     "DiagnoraX AI",
     "health companion",
     "AI symptom checker",
     "BMI calculator",
     "health history",
-    "local-first health app",
     "mobile health app",
   ],
   authors: [{ name: "Somesh M", email: "someshm7662@gmail.com" }],
