@@ -14,24 +14,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  title: "DiagnoraX AI — Your Personal AI Health Companion",
+  description:
+    "Describe symptoms in plain language and get a structured informational analysis with clear next steps. Health information, not medical advice. Data stays local.",
+  keywords: [
+    "DiagnoraX AI",
+    "health companion",
+    "AI symptom checker",
+    "BMI calculator",
+    "health history",
+    "local-first health app",
+  ],
+  authors: [{ name: "Somesh M", email: "someshm7662@gmail.com" }],
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },
   openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
+    title: "DiagnoraX AI",
+    description: "Your personal AI health companion. Information you can act on — not a diagnosis.",
+    siteName: "DiagnoraX AI",
     type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
   },
 };
 
