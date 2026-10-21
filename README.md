@@ -88,6 +88,8 @@ same UI as the APK. A `manifest.webmanifest` + service worker are included.
 </tr>
 </table>
 
+<img src="docs/screenshots/00-hero-desktop.png" width="640" alt="DiagnoraX AI running in a phone frame on desktop" />
+
 <sub>Desktop preview renders the same app inside a phone frame — it is a mobile app, not a website.</sub>
 </div>
 
