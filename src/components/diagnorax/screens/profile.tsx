@@ -1,12 +1,16 @@
 'use client'
 
 /* DiagnoraX AI — Profile screen (fresh rebuild):
- * display name, emergency numbers, data export, clear-all and about. */
+ * display name, AI engine status + optional cloud server, emergency numbers,
+ * data export, clear-all and about. */
 
 import { useEffect, useState } from 'react'
 import {
   Check,
+  Cloud,
+  Cpu,
   Download,
+  Globe,
   HeartPulse,
   Info,
   Pencil,
@@ -14,6 +18,7 @@ import {
   ShieldCheck,
   Trash2,
   User,
+  X,
 } from 'lucide-react'
 import {
   AlertDialog,
@@ -25,15 +30,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { api } from '../api'
+import { api, currentAiMode, getRemoteServer, setRemoteServer } from '../api'
 import { useApp } from '../app'
 import { MEDICAL_DISCLAIMER, SectionTitle } from '../ui'
 
 const NAME_KEY = 'diagnorax.name'
 
 export function ProfileScreen() {
-  const { records, refreshRecords } = useApp()
+  const { records, refreshRecords, aiMode, recheckAiMode } = useApp()
   const { toast } = useToast()
 
   const [name, setName] = useState('')
@@ -42,8 +50,15 @@ export function ProfileScreen() {
   const [clearOpen, setClearOpen] = useState(false)
   const [clearing, setClearing] = useState(false)
 
+  const [remoteDraft, setRemoteDraft] = useState('')
+  const [remoteSet, setRemoteSet] = useState('')
+  const [connecting, setConnecting] = useState(false)
+
   useEffect(() => {
     setName(window.localStorage.getItem(NAME_KEY) ?? '')
+    const current = getRemoteServer()
+    setRemoteSet(current)
+    setRemoteDraft(current)
   }, [])
 
   function saveName() {
@@ -85,6 +100,53 @@ export function ProfileScreen() {
     } finally {
       setClearing(false)
     }
+  }
+
+  async function saveRemote() {
+    const trimmed = remoteDraft.trim().replace(/\/+$/, '')
+    if (trimmed && !/^https?:\/\//.test(trimmed)) {
+      toast({
+        title: 'Invalid server URL',
+        description: 'It must start with http:// or https://',
+        variant: 'destructive',
+      })
+      return
+    }
+    setConnecting(true)
+    setRemoteServer(trimmed)
+    await recheckAiMode() // fresh probe through the new configuration
+    const mode = await currentAiMode() // reads the cached answer
+    await refreshRecords()
+    setConnecting(false)
+    setRemoteSet(trimmed)
+    if (trimmed) {
+      if (mode === 'cloud') {
+        toast({
+          title: 'Cloud AI connected',
+          description: 'Symptom checks now use your server.',
+        })
+      } else {
+        toast({
+          title: 'Could not reach that server',
+          description: 'Still running the on-device engine.',
+          variant: 'destructive',
+        })
+      }
+    } else {
+      toast({
+        title: 'Server cleared',
+        description: 'The built-in backend is used whenever it is reachable.',
+      })
+    }
+  }
+
+  async function disconnectRemote() {
+    setRemoteServer('')
+    setRemoteDraft('')
+    setRemoteSet('')
+    await recheckAiMode()
+    await refreshRecords()
+    toast({ title: 'Cloud server disconnected', description: 'Back to the on-device engine.' })
   }
 
   const symptomCount = records.filter((r) => r.type === 'SYMPTOM_CHECK').length
@@ -138,6 +200,85 @@ export function ProfileScreen() {
           <p className="mt-0.5 flex items-center gap-1 text-[10.5px] text-text-3">
             <ShieldCheck className="size-3 text-neon/70" aria-hidden /> Stored on this device only
           </p>
+        </div>
+      </section>
+
+      {/* AI engine */}
+      <section className="flex flex-col gap-3">
+        <SectionTitle icon={Cpu}>AI engine</SectionTitle>
+        <div className="neon-card flex flex-col gap-3.5 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <span
+              className={
+                'flex size-9 shrink-0 items-center justify-center rounded-xl border ' +
+                (aiMode === 'cloud'
+                  ? 'border-neon/30 bg-neon/10'
+                  : 'border-warn/30 bg-warn/10')
+              }
+            >
+              {aiMode === 'cloud' ? (
+                <Cloud className="size-4 text-neon" aria-hidden />
+              ) : (
+                <Cpu className="size-4 text-warn" aria-hidden />
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13.5px] font-semibold">
+                {aiMode === 'cloud' ? 'Cloud AI · connected' : 'On-device engine · offline'}
+              </p>
+              <p className="text-[11px] leading-snug text-text-3">
+                {aiMode === 'cloud'
+                  ? remoteSet
+                    ? `Using your server: ${remoteSet}`
+                    : 'Large language model analysis via this app\u2019s server.'
+                  : 'Emergency triage + pre-written guidance, computed entirely on this phone.'}
+              </p>
+            </div>
+          </div>
+
+          {aiMode === 'offline' ? (
+            <div className="flex flex-col gap-2.5 border-t border-border/60 pt-3.5">
+              <Label htmlFor="remote-server">Connect a cloud AI server (optional)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="remote-server"
+                  value={remoteDraft}
+                  onChange={(e) => setRemoteDraft(e.target.value)}
+                  placeholder="https://your-diagnorax.vercel.app"
+                  inputMode="url"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  className="border-input bg-secondary/60"
+                />
+                <Button
+                  onClick={() => void saveRemote()}
+                  disabled={connecting || remoteDraft.trim() === remoteSet}
+                  className="h-10 shrink-0 rounded-xl bg-neon px-4 text-primary-foreground hover:bg-neon-dim"
+                >
+                  {connecting ? 'Connecting…' : 'Connect'}
+                </Button>
+              </div>
+              <p className="text-[10.5px] leading-relaxed text-text-3">
+                Deploy this project anywhere (Vercel, Render, your own server) and paste its URL
+                here — the app will use its AI backend over the network. Everything else keeps
+                working offline.
+              </p>
+            </div>
+          ) : remoteSet ? (
+            <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-3.5">
+              <p className="flex min-w-0 items-center gap-1.5 text-[11.5px] text-text-2">
+                <Globe className="size-3.5 shrink-0 text-cyan" aria-hidden />
+                <span className="truncate">{remoteSet}</span>
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => void disconnectRemote()}
+                className="h-8 shrink-0 rounded-lg border-border px-2.5 text-[11px]"
+              >
+                <X className="size-3" aria-hidden /> Disconnect
+              </Button>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -213,12 +354,13 @@ export function ProfileScreen() {
         <SectionTitle icon={Info}>About</SectionTitle>
         <div className="neon-card flex flex-col gap-2.5 rounded-2xl p-4 text-[12px] leading-relaxed text-text-2">
           <p>
-            <span className="font-semibold text-foreground">DiagnoraX AI</span> · fresh rebuild ·
-            v2.0
+            <span className="font-semibold text-foreground">DiagnoraX AI</span> · v2.1 · Android
+            APK + web edition
           </p>
           <p>
-            AI symptom guidance runs on a large language model with a deterministic emergency
-            triage layer. Body analysis is pure arithmetic — no AI involved.
+            Cloud mode analyses run on a large language model with a deterministic emergency
+            triage layer. Offline mode (APK) runs the same triage plus a pre-written on-device
+            knowledge base. Body analysis is pure arithmetic — no AI involved.
           </p>
           <p className="text-[10.5px] text-text-3">{MEDICAL_DISCLAIMER}</p>
         </div>

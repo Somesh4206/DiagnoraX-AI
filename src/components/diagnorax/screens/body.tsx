@@ -224,8 +224,17 @@ export function BodyScreen() {
               .
             </p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-text-3">
-              You are {Math.abs(result.deltaToMid).toFixed(1)} BMI points{' '}
-              {result.deltaToMid > 0 ? 'above' : 'below'} the middle of the healthy band.
+              {result.bmi >= 18.5 && result.bmi < 25 ? (
+                <>
+                  You are inside the healthy band — {Math.abs(result.deltaToMid).toFixed(1)} BMI
+                  points {result.deltaToMid > 0 ? 'above' : 'below'} its middle.
+                </>
+              ) : (
+                <>
+                  You are {Math.abs(result.deltaToMid).toFixed(1)} BMI points{' '}
+                  {result.deltaToMid > 0 ? 'above' : 'below'} the middle of the healthy band.
+                </>
+              )}
             </p>
           </div>
 

@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Sparkles,
   Stethoscope,
+  WifiOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { api, ApiError, type SymptomAnalysis } from '../api'
+import { api, ApiError, engineLabel, type SymptomAnalysis } from '../api'
 import { useApp } from '../app'
 import { AIThinking, MEDICAL_DISCLAIMER, SectionTitle, URGENCY, UrgencyBadge, fmtDateTime, relTime } from '../ui'
 
@@ -45,7 +46,7 @@ const DURATIONS = ['hours', '1-3 days', '4-7 days', '1-4 weeks', 'over a month',
 const SEVERITY_LABEL = (v: number) => (v <= 3 ? 'Mild' : v <= 6 ? 'Moderate' : v <= 8 ? 'Severe' : 'Very severe')
 
 export function SymptomsScreen() {
-  const { navigate, refreshRecords } = useApp()
+  const { navigate, refreshRecords, aiMode } = useApp()
   const { toast } = useToast()
 
   const [symptoms, setSymptoms] = useState('')
@@ -75,7 +76,14 @@ export function SymptomsScreen() {
       })
       setResult({ analysis: res.analysis, engine: res.engine, savedAt: res.savedAt })
       await refreshRecords()
-      toast({ title: 'Analysis complete', description: 'Saved to your history.' })
+      if (res.fellBackToOffline && aiMode === 'cloud') {
+        toast({
+          title: 'Server unreachable',
+          description: 'Answered with the on-device engine instead.',
+        })
+      } else {
+        toast({ title: 'Analysis complete', description: 'Saved to your history.' })
+      }
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.'
       setError(msg)
@@ -99,6 +107,18 @@ export function SymptomsScreen() {
           possibilities and self-care — <span className="text-foreground">not a diagnosis</span>.
         </p>
       </div>
+
+      {/* offline notice */}
+      {aiMode === 'offline' ? (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-warn/40 bg-warn/10 p-3.5">
+          <WifiOff className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden />
+          <p className="text-[12px] leading-relaxed text-text-2">
+            <span className="font-semibold text-warn">Offline mode.</span> No cloud AI reachable —
+            your check runs on the built-in on-device engine. Same emergency triage, pre-written
+            guidance, slightly less specific.
+          </p>
+        </div>
+      ) : null}
 
       {/* form */}
       <section className="neon-card flex flex-col gap-5 rounded-2xl p-5" aria-label="Symptom form">
@@ -215,7 +235,11 @@ export function SymptomsScreen() {
           disabled={!valid || loading}
           className="glow-primary glow-primary-hover h-12 w-full rounded-xl bg-neon text-[15px] font-bold text-primary-foreground hover:bg-neon-dim disabled:opacity-40"
         >
-          {loading ? 'Analyzing…' : 'Analyze with AI'}
+          {loading
+            ? 'Analyzing…'
+            : aiMode === 'offline'
+              ? 'Analyze on device'
+              : 'Analyze with AI'}
         </Button>
 
         <p className="text-center text-[10.5px] leading-relaxed text-text-3">
@@ -225,7 +249,13 @@ export function SymptomsScreen() {
 
       {/* loading */}
       {loading ? (
-        <AIThinking label="AI is analyzing your symptoms…" />
+        <AIThinking
+          label={
+            aiMode === 'offline'
+              ? 'Running the on-device check…'
+              : 'AI is analyzing your symptoms…'
+          }
+        />
       ) : null}
 
       {/* error */}
@@ -266,11 +296,7 @@ export function SymptomsScreen() {
               {URGENCY[result.analysis.urgencyLevel].sub}
             </p>
             <p className="mt-2.5 flex items-center gap-1.5 text-[10.5px] text-text-3">
-              {result.engine === 'emergency-triage' ? (
-                <>Emergency triage · deterministic, no AI call</>
-              ) : (
-                <>AI analysis · large language model</>
-              )}
+              {engineLabel(result.engine)}
               <span aria-hidden>·</span>
               <Clock className="size-3" aria-hidden />
               {fmtDateTime(result.savedAt)}

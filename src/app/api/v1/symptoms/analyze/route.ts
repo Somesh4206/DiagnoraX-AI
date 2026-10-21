@@ -1,7 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import ZAI from 'z-ai-web-dev-sdk'
 import { db } from '@/lib/db'
+import { corsJson, preflight } from '@/lib/http'
+import {
+  detectEmergency,
+  emergencyAnalysis,
+  type SymptomAnalysis,
+  type SymptomInput,
+} from '@/lib/engine'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -43,45 +50,7 @@ const analysisSchema = z.object({
   whenToSeekHelp: z.string().min(1).max(800),
 })
 
-type Analysis = z.infer<typeof analysisSchema>
-
-/* ---------- emergency triage (deterministic, runs BEFORE any AI call) ---------- */
-
-const EMERGENCY_PHRASES =
-  "chest pain|chest pressure|crushing chest|can'?t breathe|cannot breathe|difficulty breathing|trouble breathing|struggling to breathe|severe bleeding|bleeding heavily|unconscious|unresponsive|passed out|seizure|convulsion|convulsions|stroke|face drooping|face droop|slurred speech|numbness on one side|one side is numb|sudden weakness on one side|suicidal|suicide|kill myself|end my life|overdose|poisoning|poisoned|anaphylaxis|anaphylactic|severe allergic reaction|throat closing|throat is closing|tongue swelling|coughing blood|coughing up blood|vomiting blood|worst headache of my life"
-
-const EMERGENCY_RE = new RegExp(`\\b(${EMERGENCY_PHRASES})\\b`, 'i')
-
-/* Negated mentions ("no chest pain", "denies chest pain") must NOT trigger
- * the emergency path. A negation cue + at most one filler word + the phrase
- * is scrubbed before testing. Longer spans ("no fever and chest pain") are
- * deliberately left intact so a real emergency mention is never masked. */
-const NEGATED_EMERGENCY_RE = new RegExp(
-  `\\b(?:no|without|denies|deny|negative for)\\s+(?:\\w+\\s+)?(?:${EMERGENCY_PHRASES})\\b`,
-  'gi'
-)
-
-function emergencyAnalysis(): Analysis {
-  return {
-    urgencyLevel: 'emergency',
-    summary:
-      "Your description includes signs that can indicate a medical emergency. This tool cannot rule anything out, and for signs like these the safe assumption is that it needs professional attention right now — not later, and not from a chat window.",
-    possibleConditions: [],
-    selfCare: [
-      'Call your local emergency number (112 / 911 / 999 — whichever applies to you) right now. Do not wait to see if it improves.',
-      'Do not drive yourself. Stay where you are, or have someone stay with you.',
-      'If this involves chest pain, severe bleeding, or trouble breathing: keep still, sit or lie down, and wait for help.',
-      'If someone can collect them, have a list of your medications and any allergies ready for the responders.',
-    ],
-    redFlags: [
-      'Any new confusion, fainting, or unresponsiveness',
-      'Symptoms suddenly getting much worse',
-      'Trouble breathing becoming severe',
-    ],
-    whenToSeekHelp:
-      'Immediately — these signs warrant emergency care now, not an appointment later.',
-  }
-}
+type Analysis = SymptomAnalysis
 
 /* ---------- LLM path ---------- */
 
@@ -158,20 +127,19 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
+    return corsJson({ error: 'Invalid JSON body.' }, 400)
   }
 
   const parsed = inputSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json(
+    return corsJson(
       { error: parsed.error.issues[0]?.message ?? 'Invalid input.' },
-      { status: 400 }
+      400
     )
   }
-  const input = parsed.data
+  const input: SymptomInput = parsed.data
 
-  const negationScrubbed = input.symptoms.replace(NEGATED_EMERGENCY_RE, ' ')
-  const isEmergency = EMERGENCY_RE.test(negationScrubbed)
+  const isEmergency = detectEmergency(input.symptoms)
   let analysis: Analysis
   let engine: 'emergency-triage' | 'ai-llm'
 
@@ -183,9 +151,9 @@ export async function POST(req: NextRequest) {
       analysis = await withTimeout(llmAnalysis(input), 45_000)
       engine = 'ai-llm'
     } catch (err) {
-      return NextResponse.json(
+      return corsJson(
         { error: err instanceof Error ? err.message : 'The analysis failed. Please try again.' },
-        { status: 502 }
+        502
       )
     }
   }
@@ -208,5 +176,9 @@ export async function POST(req: NextRequest) {
     // non-fatal
   }
 
-  return NextResponse.json({ analysis, engine, recordId, savedAt: new Date().toISOString() })
+  return corsJson({ analysis, engine, recordId, savedAt: new Date().toISOString() })
+}
+
+export function OPTIONS() {
+  return preflight()
 }

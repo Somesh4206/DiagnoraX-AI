@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { api, type HealthRecordItem } from './api'
+import { api, currentAiMode, type AiMode, type HealthRecordItem } from './api'
 import { LogoMark } from './ui'
 import { HomeScreen } from './screens/home'
 import { SymptomsScreen } from './screens/symptoms'
@@ -42,6 +42,8 @@ interface AppCtx {
   records: HealthRecordItem[]
   recordsLoading: boolean
   refreshRecords: () => Promise<void>
+  aiMode: AiMode
+  recheckAiMode: () => Promise<void>
 }
 
 const AppContext = createContext<AppCtx | null>(null)
@@ -58,8 +60,17 @@ export function DiagnoraXApp() {
   const [view, setView] = useState<View>('home')
   const [records, setRecords] = useState<HealthRecordItem[]>([])
   const [recordsLoading, setRecordsLoading] = useState(true)
+  const [aiMode, setAiMode] = useState<AiMode>('cloud')
 
   const navigate = useCallback((v: View) => setView(v), [])
+
+  const recheckAiMode = useCallback(async () => {
+    setAiMode(await currentAiMode(true))
+  }, [])
+
+  useEffect(() => {
+    void recheckAiMode()
+  }, [recheckAiMode])
 
   const refreshRecords = useCallback(async () => {
     try {
@@ -80,7 +91,7 @@ export function DiagnoraXApp() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [view])
 
-  const ctx: AppCtx = { view, navigate, records, recordsLoading, refreshRecords }
+  const ctx: AppCtx = { view, navigate, records, recordsLoading, refreshRecords, aiMode, recheckAiMode }
 
   return (
     <AppContext.Provider value={ctx}>
@@ -93,7 +104,10 @@ export function DiagnoraXApp() {
         </a>
 
         {/* ---------- app header ---------- */}
-        <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
+        <header
+          className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
           <div className="flex h-14 items-center justify-between gap-3 px-4">
             <button
               onClick={() => navigate('home')}
@@ -108,9 +122,12 @@ export function DiagnoraXApp() {
             <p className="flex items-center gap-1.5 text-[10.5px] font-medium text-text-3">
               <span
                 aria-hidden
-                className="inline-block size-1.5 rounded-full bg-neon shadow-[0_0_8px_rgba(0,255,163,.9)]"
+                className={cn(
+                  'inline-block size-1.5 rounded-full shadow-[0_0_8px_rgba(0,255,163,.9)]',
+                  aiMode === 'cloud' ? 'bg-neon' : 'bg-warn shadow-[0_0_8px_rgba(255,191,71,.9)]'
+                )}
               />
-              Private · on-device history
+              {aiMode === 'cloud' ? 'Cloud AI · online' : 'Offline · on-device engine'}
             </p>
           </div>
         </header>
